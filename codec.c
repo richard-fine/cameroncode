@@ -34,6 +34,11 @@ void readDbFile()
 	fclose(fp);
 }
 
+int isClauseEnder(char ch)
+{
+	return (ch == '.') || (ch == ',') || (ch == '?') || (ch == ':') || (ch == ';');
+}
+
 int isWhitespace(char ch)
 {
 	return (ch == ' ') || (ch == '\t') || (ch == '\n');
@@ -42,16 +47,17 @@ int isWhitespace(char ch)
 void parseDb()
 {
 	int e; char* ptr; long i;
+	
 	dbEntries = 0;
-	// Do this in multiple passes cos I'm lazy
 	for(i = 0; i < dbSize; ++i)
 	{
-		if(dbData[i] == '.' && ((i + 1 >= dbSize) || isWhitespace(dbData[i+1])))
+		if(isClauseEnder(dbData[i]) && ((i + 1 >= dbSize) || isWhitespace(dbData[i+1])))
 		{
-			dbData[i] = 0;
+			dbData[i+1] = 0;
 			++dbEntries;
 		}
 	}
+	
 	dbIndices = malloc(dbEntries * sizeof(char*));
 	
 	ptr = dbData;
@@ -114,7 +120,7 @@ void encode(FILE* input, FILE* output, int wordSize)
 		while(bitsQueued > wordSize)
 		{
 			int bits = buf & bitsMask;
-			fprintf(output, "%s. ", dbIndices[bits]);
+			fprintf(output, "%s ", dbIndices[bits]);
 			buf >>= wordSize;
 			bitsQueued -= wordSize;
 		}
@@ -122,7 +128,7 @@ void encode(FILE* input, FILE* output, int wordSize)
 	
 	if(bitsQueued > 0)
 	{
-		fprintf(output, "%s.\n", dbIndices[buf]);
+		fprintf(output, "%s\n", dbIndices[buf]);
 	}
 }
 
@@ -144,8 +150,7 @@ int main(int argc, char* argv[])
 	
 	if(dbFile == 0)
 	{
-		fprintf(stderr, "Usage: %s [-decode] -db dbfile\n", argv[0]);
-		exit(-1);
+		dbFile = "nottingham.txt";
 	}
 	
 	readDbFile();
